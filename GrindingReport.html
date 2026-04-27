@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Grinding Production Report</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface2: #f0f2f5;
+    --border: #dde1e7;
+    --border-focus: #3b7dd8;
+    --text: #1a1d23;
+    --text-muted: #6b7280;
+    --accent: #3b7dd8;
+    --accent-light: #ebf2ff;
+    --success: #16a34a;
+    --success-light: #dcfce7;
+    --danger: #dc2626;
+    --danger-light: #fee2e2;
+    --warn: #d97706;
+    --warn-light: #fef3c7;
+    --radius: 10px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
+    --shadow-lg: 0 4px 24px rgba(0,0,0,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  /* HEADER */
+  .app-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+  }
+  .app-header .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .app-header .brand-icon {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 18px;
+  }
+  .app-header h1 {
+    font-size: 16px; font-weight: 700; letter-spacing: -0.3px;
+  }
+  .app-header .subtitle {
+    font-size: 11px; color: var(--text-muted); font-weight: 400;
+  }
+  .record-count-badge {
+    background: var(--accent-light);
+    color: var(--accent);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px; font-weight: 600;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    padding: 12px 20px 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-btn {
+    padding: 9px 20px;
+    border: none; background: transparent;
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    cursor: pointer; transition: all 0.15s;
+    border-radius: 6px 6px 0 0;
+  }
+  .tab-btn:hover { background: var(--surface2); color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--accent-light); }
+
+  /* CONTAINER */
+  .container { max-width: 900px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card-header h2 { font-size: 14px; font-weight: 700; }
+  .card-header .icon { font-size: 16px; }
+  .card-body { padding: 20px; }
+
+  /* FORM GRID */
+  .form-grid { display: grid; gap: 16px; }
+  .form-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label {
+    font-size: 12px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .form-group label .req { color: var(--danger); margin-left: 2px; }
+  .form-group label .erp-tag {
+    background: #e0f2fe; color: #0369a1;
+    font-size: 9px; padding: 1px 5px; border-radius: 3px;
+    margin-left: 4px; font-weight: 500; text-transform: none; letter-spacing: 0;
+  }
+  .form-group label .no-erp-tag {
+    background: #f3e8ff; color: #7e22ce;
+    font-size: 9px; padding: 1px 5px; border-radius: 3px;
+    margin-left: 4px; font-weight: 500; text-transform: none; letter-spacing: 0;
+  }
+
+  input, select, textarea {
+    font-family: inherit; font-size: 14px;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(59,125,216,0.12);
+  }
+  input.error { border-color: var(--danger); }
+  input.valid { border-color: var(--success); }
+  .field-hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .field-error { font-size: 11px; color: var(--danger); margin-top: 2px; display: none; }
+  .field-error.show { display: block; }
+
+  /* SECTION DIVIDERS */
+  .section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--text-muted);
+    padding: 14px 0 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::before {
+    content: '';
+    width: 3px; height: 14px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* ERP CALC BOX */
+  .erp-calc {
+    background: var(--accent-light);
+    border: 1px solid #bdd3f7;
+    border-radius: 7px;
+    padding: 12px 14px;
+    margin-top: 8px;
+  }
+  .erp-calc .calc-label { font-size: 11px; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+  .erp-calc .calc-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 20px; font-weight: 600; color: var(--accent);
+  }
+  .erp-calc .calc-formula { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 10px 20px;
+    border-radius: 8px; border: none;
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #2563c0; box-shadow: 0 4px 12px rgba(59,125,216,0.3); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #15803d; box-shadow: 0 4px 12px rgba(22,163,74,0.3); }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #b91c1c; }
+  .btn-outline {
+    background: transparent; color: var(--accent);
+    border: 1.5px solid var(--accent);
+  }
+  .btn-outline:hover { background: var(--accent-light); }
+  .btn-ghost {
+    background: var(--surface2); color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--border); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .form-actions {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    justify-content: flex-end;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+
+  /* TOAST */
+  .toast-container {
+    position: fixed; bottom: 20px; right: 20px;
+    display: flex; flex-direction: column; gap: 8px;
+    z-index: 999;
+  }
+  .toast {
+    padding: 12px 18px; border-radius: 10px;
+    font-size: 13px; font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.25s ease;
+    max-width: 280px;
+  }
+  .toast.success { background: var(--success-light); color: var(--success); border: 1px solid #86efac; }
+  .toast.error { background: var(--danger-light); color: var(--danger); border: 1px solid #fca5a5; }
+  .toast.info { background: var(--accent-light); color: var(--accent); border: 1px solid #93c5fd; }
+  @keyframes slideUp { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform: translateY(0); } }
+
+  /* RECORDS TABLE */
+  .records-toolbar {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .records-toolbar .search-box {
+    flex: 1; min-width: 180px;
+    position: relative;
+  }
+  .records-toolbar .search-box input {
+    padding-left: 32px;
+  }
+  .records-toolbar .search-box .search-icon {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-size: 14px;
+  }
+
+  .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: var(--surface2); padding: 10px 12px;
+    text-align: left; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-muted); white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 10px 12px; vertical-align: middle; }
+  tbody td .badge {
+    background: var(--accent-light); color: var(--accent);
+    padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
+    font-family: 'DM Mono', monospace;
+  }
+  .no-records {
+    text-align: center; padding: 48px 20px;
+    color: var(--text-muted); font-size: 14px;
+  }
+  .no-records .icon { font-size: 36px; display: block; margin-bottom: 8px; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 500;
+    align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 12px;
+    max-width: 600px; width: 100%;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    animation: modalIn 0.2s ease;
+  }
+  @keyframes modalIn { from { opacity:0; transform:scale(0.96); } to { opacity:1; transform:scale(1); } }
+  .modal-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-header h3 { font-size: 16px; font-weight: 700; }
+  .modal-close {
+    width: 28px; height: 28px; border-radius: 6px;
+    border: none; background: var(--surface2);
+    cursor: pointer; font-size: 16px; color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: var(--danger-light); color: var(--danger); }
+  .modal-body { padding: 20px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    .form-grid.cols-2,
+    .form-grid.cols-3 { grid-template-columns: 1fr; }
+    .app-header h1 { font-size: 14px; }
+    .container { padding: 16px 12px 60px; }
+    .btn { font-size: 13px; padding: 9px 14px; }
+    .card-body { padding: 16px 14px; }
+    .form-actions { justify-content: stretch; }
+    .form-actions .btn { flex: 1; justify-content: center; }
+  }
+
+  @media (min-width: 641px) and (max-width: 1024px) {
+    .form-grid.cols-3 { grid-template-columns: 1fr 1fr; }
+  }
+
+  .weight-group {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  @media (max-width: 400px) { .weight-group { grid-template-columns: 1fr; } }
+
+  .highlight-erp {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="brand">
+    <div class="brand-icon">⚙</div>
+    <div>
+      <div class="app-header"><h1>Grinding Production Report</h1></div>
+      <div class="subtitle">Offline Data Entry System</div>
+    </div>
+  </div>
+  <span class="record-count-badge" id="headerCount">0 records</span>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('entry')">📝 New Entry</button>
+  <button class="tab-btn" onclick="switchTab('records')">📋 All Records</button>
+</div>
+
+<!-- ENTRY TAB -->
+<div id="tab-entry" class="container">
+  <div class="card">
+    <div class="card-header">
+      <span class="icon">📋</span>
+      <h2>Production Entry Form</h2>
+    </div>
+    <div class="card-body">
+
+      <!-- SECTION: WO Numbers -->
+      <div class="section-label">Work Orders</div>
+      <div class="form-grid cols-2">
+        <div class="form-group">
+          <label>WO Number on BIN <span class="req">*</span><span class="erp-tag">ERP</span></label>
+          <input type="text" id="wo_bin" maxlength="8" placeholder="WO000000"
+            oninput="formatWO(this)" onblur="validateWO(this, true)"/>
+          <div class="field-hint">Format: WO + 6 digits (e.g. WO123456)</div>
+          <div class="field-error" id="wo_bin_err">Required. Format: WO + 6 digits</div>
+        </div>
+        <div class="form-group">
+          <label>WO Number of Next Batch <span class="no-erp-tag">No ERP</span></label>
+          <input type="text" id="wo_next" maxlength="8" placeholder="WO000000 (optional)"
+            oninput="formatWO(this)" onblur="validateWO(this, false)"/>
+          <div class="field-hint">Format: WO + 6 digits — optional</div>
+          <div class="field-error" id="wo_next_err">Format: WO + 6 digits</div>
+        </div>
+      </div>
+
+      <!-- SECTION: Machine & Personnel -->
+      <div class="section-label">Machine & Personnel</div>
+      <div class="form-grid cols-3">
+        <div class="form-group">
+          <label>Resource / Machine <span class="req">*</span><span class="erp-tag">ERP</span></label>
+          <select id="resource">
+            <option value="">— Select —</option>
+            <option>GR-1</option>
+            <option>GR-2</option>
+            <option>GR-3</option>
+            <option>GR-4</option>
+            <option>G-PIN-M</option>
+          </select>
+          <div class="field-error" id="resource_err">Please select a machine</div>
+        </div>
+        <div class="form-group">
+          <label>Operator <span class="req">*</span><span class="no-erp-tag">No ERP</span></label>
+          <input type="text" id="operator" maxlength="10" placeholder="Max 10 chars"
+            onblur="validateRequired(this, 'operator_err')"/>
+          <div class="field-hint">Up to 10 characters</div>
+          <div class="field-error" id="operator_err">Required field</div>
+        </div>
+        <div class="form-group">
+          <label>Sample Sent By <span class="req">*</span><span class="no-erp-tag">No ERP</span></label>
+          <input type="text" id="sample_sent_by" maxlength="10" placeholder="Max 10 chars"
+            onblur="validateRequired(this, 'sample_sent_by_err')"/>
+          <div class="field-hint">Up to 10 characters</div>
+          <div class="field-error" id="sample_sent_by_err">Required field</div>
+        </div>
+      </div>
+
+      <!-- SECTION: Date & Time -->
+      <div class="section-label">Date & Time</div>
+      <div class="form-grid cols-2">
+        <div class="form-group">
+          <label>Start Date <span class="erp-tag">ERP</span></label>
+          <input type="text" id="start_date" maxlength="6" placeholder="DDMMYY"
+            oninput="formatDate(this)" />
+          <div class="field-hint">DDMMYY — leave empty for today</div>
+        </div>
+        <div class="form-group">
+          <label>End Date <span class="erp-tag">ERP</span></label>
+          <input type="text" id="end_date" maxlength="6" placeholder="DDMMYY"
+            oninput="formatDate(this)" />
+          <div class="field-hint">DDMMYY — leave empty for today</div>
+        </div>
+        <div class="form-group">
+          <label>Start Time <span class="erp-tag">ERP</span></label>
+          <input type="text" id="start_time" maxlength="4" placeholder="e.g. 1205"
+            oninput="onlyDigits(this)" />
+          <div class="field-hint">4 digits → HH:MM — leave empty for now</div>
+        </div>
+        <div class="form-group">
+          <label>End Time <span class="erp-tag">ERP</span></label>
+          <input type="text" id="end_time" maxlength="4" placeholder="e.g. 1530"
+            oninput="onlyDigits(this)" />
+          <div class="field-hint">4 digits → HH:MM — leave empty for now</div>
+        </div>
+      </div>
+
+      <!-- SECTION: Weight -->
+      <div class="section-label">Output & Weight (kg)</div>
+      <div class="form-grid cols-2">
+        <div class="form-group">
+          <label>Output KG <span class="erp-tag">ERP</span></label>
+          <div class="weight-group">
+            <div>
+              <input type="number" id="empty_weight" min="0" placeholder="Empty weight"
+                oninput="calcERP()" onblur="ensurePositive(this)"/>
+              <div class="field-hint">Empty weight (≥0)</div>
+            </div>
+            <div>
+              <input type="number" id="full_weight" min="0" placeholder="Full weight"
+                oninput="calcERP()" onblur="ensurePositive(this)"/>
+              <div class="field-hint">Full weight (≥0)</div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Rest KG <span class="erp-tag">ERP</span></label>
+          <input type="number" id="rest_weight" min="0" placeholder="Rest weight"
+            oninput="calcERP()" onblur="ensurePositive(this)"/>
+          <div class="field-hint">Rest weight (≥0)</div>
+        </div>
+      </div>
+
+      <div class="erp-calc">
+        <div class="calc-label">🔢 ERP Entry Value = Full – Empty + Rest</div>
+        <div class="calc-val" id="erp_val">0 kg</div>
+        <div class="calc-formula" id="erp_formula">0 – 0 + 0 = 0 kg</div>
+      </div>
+
+      <!-- SECTION: Grinding Params -->
+      <div class="section-label">Grinding Parameters</div>
+      <div class="form-grid cols-2">
+        <div class="form-group">
+          <label>Setting PLM <span class="req">*</span><span class="no-erp-tag">No ERP</span></label>
+          <input type="text" id="setting_plm" maxlength="4" placeholder="4 digits"
+            oninput="onlyDigits(this)" onblur="validateRequired(this, 'setting_plm_err')"/>
+          <div class="field-hint">Exactly 4 digits</div>
+          <div class="field-error" id="setting_plm_err">Required — 4 digits</div>
+        </div>
+        <div class="form-group">
+          <label>Grind <span class="req">*</span><span class="no-erp-tag">No ERP</span></label>
+          <input type="text" id="grind" maxlength="3" placeholder="0.0 – 9.9"
+            oninput="formatGrind(this)" onblur="validateGrind()"/>
+          <div class="field-hint">2 digits X,X between 0,0 and 9,9</div>
+          <div class="field-error" id="grind_err">Required. Value between 0,0 and 9,9</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-ghost" type="button" onclick="resetForm()">🔄 Clear Form</button>
+        <button class="btn btn-success" type="button" onclick="downloadBatchSheetPDF()">📥 Download Batch Sheet PDF</button>
+        <button class="btn btn-primary" type="button" onclick="saveRecord()">💾 Save Record</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RECORDS TAB -->
+<div id="tab-records" class="container" style="display:none">
+  <div class="card">
+    <div class="card-header">
+      <span class="icon">📋</span>
+      <h2>Saved Records</h2>
+    </div>
+    <div class="card-body">
+      <div class="records-toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search by WO, operator, machine…" oninput="renderRecords()"/>
+        </div>
+        <button class="btn btn-outline" onclick="exportCSV()">📄 Export CSV</button>
+        <button class="btn btn-success" onclick="exportPDF()">📥 Save Records (PDF)</button>
+        <button class="btn btn-danger" onclick="clearAllRecords()">🗑 Clear All</button>
+      </div>
+      <div id="recordsTable"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Record Detail</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ===== UTILITIES =====
+function pad(n) { return String(n).padStart(2,'0'); }
+function todayDDMMYY() {
+  const d = new Date();
+  return pad(d.getDate()) + pad(d.getMonth()+1) + String(d.getFullYear()).slice(-2);
+}
+function nowHHMM() {
+  const d = new Date();
+  return pad(d.getHours()) + pad(d.getMinutes());
+}
+function parseTime(raw) {
+  const digits = raw.replace(/\D/g,'');
+  if (digits.length === 4) return digits.slice(0,2) + ':' + digits.slice(2);
+  if (digits.length === 3) return digits[0] + ':' + digits.slice(1);
+  return null;
+}
+function parseDate(raw) {
+  const d = raw.replace(/\D/g,'');
+  if (d.length === 6) return d.slice(0,2) + '/' + d.slice(2,4) + '/' + d.slice(4);
+  return null;
+}
+function onlyDigits(el) { el.value = el.value.replace(/\D/g,''); }
+function formatDate(el) { onlyDigits(el); }
+function formatGrind(el) {
+  let v = el.value.replace(/[^0-9,]/g,'');
+  el.value = v;
+}
+function ensurePositive(el) {
+  const v = parseFloat(el.value);
+  if (isNaN(v) || v < 0) el.value = '';
+  calcERP();
+}
+function formatWO(el) {
+  let v = el.value.toUpperCase();
+  if (!v.startsWith('WO')) {
+    const nums = v.replace(/\D/g,'');
+    v = 'WO' + nums;
+  } else {
+    const after = v.slice(2).replace(/\D/g,'');
+    v = 'WO' + after;
+  }
+  el.value = v.slice(0,8);
+}
+function validateWO(el, required) {
+  const id = el.id + '_err';
+  const errEl = document.getElementById(id);
+  const v = el.value.trim();
+  if (!v && !required) { el.classList.remove('error','valid'); if(errEl) errEl.classList.remove('show'); return true; }
+  if (!v && required) { el.classList.add('error'); el.classList.remove('valid'); if(errEl) errEl.classList.add('show'); return false; }
+  const ok = /^WO\d{6}$/.test(v);
+  el.classList.toggle('error', !ok); el.classList.toggle('valid', ok);
+  if(errEl) errEl.classList.toggle('show', !ok);
+  return ok;
+}
+function validateRequired(el, errId) {
+  const ok = el.value.trim().length > 0;
+  el.classList.toggle('error', !ok); el.classList.toggle('valid', ok);
+  const errEl = document.getElementById(errId);
+  if(errEl) errEl.classList.toggle('show', !ok);
+  return ok;
+}
+function validateGrind() {
+  const v = document.getElementById('grind').value.trim();
+  const errEl = document.getElementById('grind_err');
+  if (!v) { document.getElementById('grind').classList.add('error'); errEl.classList.add('show'); return false; }
+  const num = parseFloat(v.replace(',','.'));
+  const ok = !isNaN(num) && num >= 0 && num <= 9.9;
+  document.getElementById('grind').classList.toggle('error',!ok);
+  document.getElementById('grind').classList.toggle('valid',ok);
+  errEl.classList.toggle('show',!ok);
+  return ok;
+}
+function calcERP() {
+  const empty = parseFloat(document.getElementById('empty_weight').value) || 0;
+  const full = parseFloat(document.getElementById('full_weight').value) || 0;
+  const rest = parseFloat(document.getElementById('rest_weight').value) || 0;
+  const result = full - empty + rest;
+  document.getElementById('erp_val').textContent = result + ' kg';
+  document.getElementById('erp_formula').textContent = full + ' – ' + empty + ' + ' + rest + ' = ' + result + ' kg';
+}
+
+// ===== TOAST =====
+function toast(msg, type='success') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ===== TABS =====
+function switchTab(tab) {
+  document.getElementById('tab-entry').style.display = tab==='entry' ? '' : 'none';
+  document.getElementById('tab-records').style.display = tab==='records' ? '' : 'none';
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (i===0 && tab==='entry')||(i===1 && tab==='records')));
+  if (tab==='records') renderRecords();
+}
+
+// ===== STORAGE =====
+const STORAGE_KEY = 'grinding_records_v1';
+function loadRecords() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+}
+function saveRecords(records) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  updateHeaderCount();
+}
+function updateHeaderCount() {
+  const r = loadRecords();
+  document.getElementById('headerCount').textContent = r.length + ' record' + (r.length!==1?'s':'');
+}
+
+// ===== SAVE RECORD =====
+function saveRecord() {
+  // Validate
+  let ok = true;
+  ok = validateWO(document.getElementById('wo_bin'), true) && ok;
+  validateWO(document.getElementById('wo_next'), false);
+  ok = (document.getElementById('resource').value !== '') && ok;
+  if (!document.getElementById('resource').value) { document.getElementById('resource_err').classList.add('show'); ok=false; } else { document.getElementById('resource_err').classList.remove('show'); }
+  ok = validateRequired(document.getElementById('operator'), 'operator_err') && ok;
+  ok = validateRequired(document.getElementById('sample_sent_by'), 'sample_sent_by_err') && ok;
+  ok = validateRequired(document.getElementById('setting_plm'), 'setting_plm_err') && ok;
+  ok = validateGrind() && ok;
+  if (!ok) { toast('Please fix the highlighted fields.', 'error'); return; }
+
+  // Parse date/time with defaults
+  const sdRaw = document.getElementById('start_date').value.trim();
+  const edRaw = document.getElementById('end_date').value.trim();
+  const stRaw = document.getElementById('start_time').value.trim();
+  const etRaw = document.getElementById('end_time').value.trim();
+
+  const startDate = parseDate(sdRaw) || todayDDMMYY().slice(0,2)+'/'+todayDDMMYY().slice(2,4)+'/'+todayDDMMYY().slice(4);
+  const endDate = parseDate(edRaw) || todayDDMMYY().slice(0,2)+'/'+todayDDMMYY().slice(2,4)+'/'+todayDDMMYY().slice(4);
+  const startTime = parseTime(stRaw) || (nowHHMM().slice(0,2)+':'+nowHHMM().slice(2));
+  const endTime = parseTime(etRaw) || (nowHHMM().slice(0,2)+':'+nowHHMM().slice(2));
+
+  const empty = parseFloat(document.getElementById('empty_weight').value) || 0;
+  const full = parseFloat(document.getElementById('full_weight').value) || 0;
+  const rest = parseFloat(document.getElementById('rest_weight').value) || 0;
+  const erp = full - empty + rest;
+
+  const record = {
+    id: Date.now(),
+    savedAt: new Date().toLocaleString(),
+    wo_bin: document.getElementById('wo_bin').value.trim(),
+    wo_next: document.getElementById('wo_next').value.trim() || '—',
+    resource: document.getElementById('resource').value,
+    operator: document.getElementById('operator').value.trim(),
+    sample_sent_by: document.getElementById('sample_sent_by').value.trim(),
+    start_date: startDate,
+    end_date: endDate,
+    start_time: startTime,
+    end_time: endTime,
+    empty_weight: empty,
+    full_weight: full,
+    rest_weight: rest,
+    erp_weight: erp,
+    setting_plm: document.getElementById('setting_plm').value.trim(),
+    grind: document.getElementById('grind').value.trim(),
+  };
+
+  const records = loadRecords();
+  records.push(record);
+  saveRecords(records);
+  toast('✅ Record saved successfully!', 'success');
+  resetForm();
+}
+
+function resetForm() {
+  ['wo_bin','wo_next','operator','sample_sent_by','start_date','end_date',
+   'start_time','end_time','empty_weight','full_weight','rest_weight','setting_plm','grind'].forEach(id => {
+    document.getElementById(id).value = '';
+    document.getElementById(id).classList.remove('error','valid');
+  });
+  document.getElementById('resource').value = '';
+  ['wo_bin_err','wo_next_err','resource_err','operator_err','sample_sent_by_err','setting_plm_err','grind_err'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.classList.remove('show');
+  });
+  calcERP();
+}
+
+// ===== RENDER RECORDS TABLE =====
+function renderRecords() {
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  let records = loadRecords();
+  if (q) records = records.filter(r =>
+    r.wo_bin.toLowerCase().includes(q) ||
+    r.operator.toLowerCase().includes(q) ||
+    r.resource.toLowerCase().includes(q) ||
+    r.sample_sent_by.toLowerCase().includes(q)
+  );
+
+  const container = document.getElementById('recordsTable');
+  if (!records.length) {
+    container.innerHTML = '<div class="no-records"><span class="icon">📭</span>No records found</div>';
+    return;
+  }
+
+  const rows = records.map((r,i) => `
+    <tr>
+      <td><span class="badge">${r.wo_bin}</span></td>
+      <td>${r.resource}</td>
+      <td>${r.operator}</td>
+      <td>${r.start_date}</td>
+      <td>${r.start_time} – ${r.end_time}</td>
+      <td><b>${r.erp_weight} kg</b></td>
+      <td>
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" onclick="viewRecord(${r.id})">👁 View</button>
+        <button class="btn btn-danger" style="padding:5px 10px;font-size:12px;margin-left:4px" onclick="deleteRecord(${r.id})">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>WO (BIN)</th><th>Machine</th><th>Operator</th>
+            <th>Start Date</th><th>Time</th><th>ERP Weight</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function deleteRecord(id) {
+  if (!confirm('Delete this record?')) return;
+  const records = loadRecords().filter(r => r.id !== id);
+  saveRecords(records);
+  renderRecords();
+  toast('Record deleted', 'info');
+}
+
+function viewRecord(id) {
+  const r = loadRecords().find(r => r.id === id);
+  if (!r) return;
+  document.getElementById('modalTitle').textContent = 'Record: ' + r.wo_bin;
+  document.getElementById('modalBody').innerHTML = `
+    <table style="width:100%;font-size:13px;border-collapse:collapse">
+      ${[
+        ['WO BIN', r.wo_bin], ['WO Next Batch', r.wo_next],
+        ['Machine', r.resource], ['Operator', r.operator],
+        ['Sample Sent By', r.sample_sent_by],
+        ['Start Date', r.start_date], ['End Date', r.end_date],
+        ['Start Time', r.start_time], ['End Time', r.end_time],
+        ['Empty Weight', r.empty_weight+' kg'], ['Full Weight', r.full_weight+' kg'],
+        ['Rest Weight', r.rest_weight+' kg'], ['ERP Weight (Full–Empty+Rest)', '<b>'+r.erp_weight+' kg</b>'],
+        ['Setting PLM', r.setting_plm], ['Grind', r.grind],
+        ['Saved At', r.savedAt]
+      ].map(([k,v]) => `<tr style="border-bottom:1px solid #eee"><td style="padding:8px 6px;color:#6b7280;font-size:11px;text-transform:uppercase;font-weight:600;width:45%">${k}</td><td style="padding:8px 6px">${v}</td></tr>`).join('')}
+    </table>
+  `;
+  document.getElementById('detailModal').classList.add('show');
+}
+function closeModal() { document.getElementById('detailModal').classList.remove('show'); }
+
+function clearAllRecords() {
+  if (!confirm('Are you sure you want to delete ALL records? This cannot be undone.')) return;
+  saveRecords([]);
+  renderRecords();
+  toast('All records cleared', 'info');
+}
+
+// ===== EXPORT CSV =====
+function exportCSV() {
+  const records = loadRecords();
+  if (!records.length) { toast('No records to export', 'info'); return; }
+  const headers = ['WO_BIN','WO_NEXT','Machine','Operator','Sample_Sent_By','Start_Date','End_Date','Start_Time','End_Time','Empty_KG','Full_KG','Rest_KG','ERP_KG','Setting_PLM','Grind','Saved_At'];
+  const rows = records.map(r => [
+    r.wo_bin, r.wo_next, r.resource, r.operator, r.sample_sent_by,
+    r.start_date, r.end_date, r.start_time, r.end_time,
+    r.empty_weight, r.full_weight, r.rest_weight, r.erp_weight,
+    r.setting_plm, r.grind, r.savedAt
+  ].map(v => '"'+String(v).replace(/"/g,'""')+'"').join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'GrindingReport_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  toast('CSV exported!', 'success');
+}
+
+// ===== EXPORT PDF =====
+function exportPDF() {
+  const records = loadRecords();
+  if (!records.length) { toast('No records to export', 'info'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+
+  // Header
+  doc.setFillColor(59, 125, 216);
+  doc.rect(0, 0, 842, 50, 'F');
+  doc.setFontSize(18); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text('Grinding Production Report', 30, 32);
+  doc.setFontSize(10); doc.setFont('helvetica','normal');
+  doc.text('Generated: ' + new Date().toLocaleString(), 30, 45);
+  doc.text('Total Records: ' + records.length, 650, 32);
+
+  // Table
+  const cols = [
+    {header:'WO BIN', dataKey:'wo_bin'},
+    {header:'Machine', dataKey:'resource'},
+    {header:'Operator', dataKey:'operator'},
+    {header:'Sample By', dataKey:'sample_sent_by'},
+    {header:'Start Date', dataKey:'start_date'},
+    {header:'End Date', dataKey:'end_date'},
+    {header:'Start Time', dataKey:'start_time'},
+    {header:'End Time', dataKey:'end_time'},
+    {header:'Empty KG', dataKey:'empty_weight'},
+    {header:'Full KG', dataKey:'full_weight'},
+    {header:'Rest KG', dataKey:'rest_weight'},
+    {header:'ERP KG', dataKey:'erp_weight'},
+    {header:'PLM', dataKey:'setting_plm'},
+    {header:'Grind', dataKey:'grind'},
+  ];
+
+  doc.autoTable({
+    startY: 60,
+    columns: cols,
+    body: records,
+    styles: { fontSize: 8, cellPadding: 4, font: 'helvetica' },
+    headStyles: { fillColor: [59,125,216], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+    alternateRowStyles: { fillColor: [245,246,248] },
+    margin: { left: 20, right: 20 },
+    columnStyles: { erp_weight: { fontStyle: 'bold' } }
+  });
+
+  // ERP summary section per record — second page detail
+  records.forEach((r, idx) => {
+    doc.addPage();
+    doc.setFillColor(240,242,245);
+    doc.rect(0,0,842,842,'F');
+    doc.setFillColor(59,125,216);
+    doc.rect(0,0,842,40,'F');
+    doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+    doc.text('Record #' + (idx+1) + ' — ' + r.wo_bin, 20, 26);
+    doc.setFontSize(9); doc.setFont('helvetica','normal');
+    doc.text('Saved: ' + r.savedAt, 600, 26);
+
+    const fields = [
+      ['WO Number on BIN (ERP)', r.wo_bin],
+      ['WO Next Batch', r.wo_next],
+      ['Resource / Machine (ERP)', r.resource],
+      ['Operator', r.operator],
+      ['Sample Sent By', r.sample_sent_by],
+      ['Start Date (ERP)', r.start_date],
+      ['End Date (ERP)', r.end_date],
+      ['Start Time (ERP)', r.start_time],
+      ['End Time (ERP)', r.end_time],
+      ['Empty Weight (kg)', r.empty_weight + ' kg'],
+      ['Full Weight (kg)', r.full_weight + ' kg'],
+      ['Rest Weight (kg)', r.rest_weight + ' kg'],
+      ['ERP Weight = Full–Empty+Rest (ERP)', r.erp_weight + ' kg'],
+      ['Setting PLM', r.setting_plm],
+      ['Grind', r.grind],
+    ];
+
+    let y = 60;
+    fields.forEach(([label, val], i) => {
+      const isERP = label.includes('(ERP)');
+      if(isERP) doc.setFillColor(235,242,255);
+      else doc.setFillColor(255,255,255);
+      doc.rect(20, y-12, 400, 18, 'F');
+      doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(107,114,128);
+      doc.text(label.replace(' (ERP)',''), 25, y);
+      doc.setFont('helvetica','normal'); doc.setTextColor(26,29,35);
+      doc.text(String(val), 250, y);
+      if(isERP) { doc.setFontSize(7); doc.setTextColor(59,125,216); doc.text('ERP', 390, y); }
+      y += 22;
+    });
+  });
+
+  doc.save('GrindingReport_' + new Date().toISOString().slice(0,10) + '.pdf');
+  toast('PDF downloaded!', 'success');
+}
+
+// ===== DOWNLOAD CURRENT BATCH SHEET AS PDF =====
+function downloadBatchSheetPDF() {
+  // Collect current form values (no validation required — use what's entered)
+  const sdRaw = document.getElementById('start_date').value.trim();
+  const edRaw = document.getElementById('end_date').value.trim();
+  const stRaw = document.getElementById('start_time').value.trim();
+  const etRaw = document.getElementById('end_time').value.trim();
+
+  const startDate = parseDate(sdRaw) || (() => { const t=todayDDMMYY(); return t.slice(0,2)+'/'+t.slice(2,4)+'/'+t.slice(4); })();
+  const endDate   = parseDate(edRaw) || (() => { const t=todayDDMMYY(); return t.slice(0,2)+'/'+t.slice(2,4)+'/'+t.slice(4); })();
+  const startTime = parseTime(stRaw) || (nowHHMM().slice(0,2)+':'+nowHHMM().slice(2));
+  const endTime   = parseTime(etRaw) || (nowHHMM().slice(0,2)+':'+nowHHMM().slice(2));
+
+  const empty = parseFloat(document.getElementById('empty_weight').value) || 0;
+  const full  = parseFloat(document.getElementById('full_weight').value)  || 0;
+  const rest  = parseFloat(document.getElementById('rest_weight').value)  || 0;
+  const erp   = full - empty + rest;
+
+  const r = {
+    wo_bin:         document.getElementById('wo_bin').value.trim()         || '—',
+    wo_next:        document.getElementById('wo_next').value.trim()        || '—',
+    resource:       document.getElementById('resource').value              || '—',
+    operator:       document.getElementById('operator').value.trim()       || '—',
+    sample_sent_by: document.getElementById('sample_sent_by').value.trim() || '—',
+    start_date:     startDate,
+    end_date:       endDate,
+    start_time:     startTime,
+    end_time:       endTime,
+    empty_weight:   empty,
+    full_weight:    full,
+    rest_weight:    rest,
+    erp_weight:     erp,
+    setting_plm:    document.getElementById('setting_plm').value.trim()   || '—',
+    grind:          document.getElementById('grind').value.trim()          || '—',
+    savedAt:        new Date().toLocaleString(),
+  };
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+  const PW = 595, PH = 842;
+  const ML = 36, MR = 36, MT = 36;
+
+  // ── HEADER BAND ──
+  doc.setFillColor(59, 125, 216);
+  doc.rect(0, 0, PW, 56, 'F');
+  doc.setFontSize(20); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text('GRINDING PRODUCTION BATCH SHEET', ML, 28);
+  doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('Generated: ' + r.savedAt, ML, 44);
+
+  // ── THIN ACCENT STRIPE ──
+  doc.setFillColor(30, 90, 170);
+  doc.rect(0, 56, PW, 4, 'F');
+
+  let y = 76;
+
+  // ── WO BOX (highlighted) ──
+  doc.setFillColor(235, 242, 255);
+  doc.setDrawColor(59, 125, 216);
+  doc.setLineWidth(1.2);
+  doc.roundedRect(ML, y, PW - ML - MR, 52, 5, 5, 'FD');
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(59,125,216);
+  doc.text('WO NUMBER ON BIN', ML+10, y+14);
+  doc.text('WO NUMBER — NEXT BATCH', (PW/2)+10, y+14);
+  doc.setFontSize(18); doc.setFont('helvetica','bold'); doc.setTextColor(26,29,35);
+  doc.text(r.wo_bin, ML+10, y+38);
+  doc.setFontSize(14); doc.setFont('helvetica','normal'); doc.setTextColor(107,114,128);
+  doc.text(r.wo_next, (PW/2)+10, y+38);
+  // divider
+  doc.setDrawColor(180, 200, 240); doc.setLineWidth(0.5);
+  doc.line(PW/2, y+6, PW/2, y+46);
+  y += 64;
+
+  // ── SECTION HELPER ──
+  function sectionHeader(title, yPos) {
+    doc.setFillColor(245, 246, 248);
+    doc.rect(ML, yPos, PW-ML-MR, 18, 'F');
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(107,114,128);
+    doc.text(title.toUpperCase(), ML+8, yPos+12);
+    doc.setFillColor(59,125,216);
+    doc.rect(ML, yPos, 3, 18, 'F');
+    return yPos + 22;
+  }
+
+  function dataRow(label, value, x, yPos, w, isERP) {
+    doc.setFillColor(isERP ? 240 : 255, isERP ? 248 : 255, isERP ? 255 : 255);
+    doc.rect(x, yPos, w, 26, 'F');
+    doc.setDrawColor(220,225,232); doc.setLineWidth(0.4);
+    doc.rect(x, yPos, w, 26);
+    doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(130,140,155);
+    doc.text(label, x+6, yPos+10);
+    doc.setFontSize(11); doc.setFont('helvetica','normal'); doc.setTextColor(26,29,35);
+    doc.text(String(value), x+6, yPos+22);
+    if (isERP) {
+      doc.setFillColor(59,125,216); doc.setTextColor(255,255,255);
+      doc.roundedRect(x+w-24, yPos+3, 18, 10, 2, 2, 'F');
+      doc.setFontSize(6); doc.setFont('helvetica','bold');
+      doc.text('ERP', x+w-20, yPos+10);
+    }
+  }
+
+  // ── MACHINE & PERSONNEL ──
+  y = sectionHeader('Machine & Personnel', y);
+  const colW3 = (PW - ML - MR - 8) / 3;
+  dataRow('RESOURCE / MACHINE', r.resource,       ML,             y, colW3, true);
+  dataRow('OPERATOR',           r.operator,        ML+colW3+4,    y, colW3, false);
+  dataRow('SAMPLE SENT BY',     r.sample_sent_by,  ML+colW3*2+8,  y, colW3, false);
+  y += 34;
+
+  // ── DATE & TIME ──
+  y = sectionHeader('Date & Time', y);
+  const colW2 = (PW - ML - MR - 4) / 2;
+  dataRow('START DATE', r.start_date, ML,          y, colW2, true);
+  dataRow('END DATE',   r.end_date,   ML+colW2+4,  y, colW2, true);
+  y += 34;
+  dataRow('START TIME', r.start_time, ML,          y, colW2, true);
+  dataRow('END TIME',   r.end_time,   ML+colW2+4,  y, colW2, true);
+  y += 34;
+
+  // ── WEIGHT ──
+  y = sectionHeader('Weight (kg)', y);
+  const colW4 = (PW - ML - MR - 12) / 4;
+  dataRow('EMPTY WEIGHT',  r.empty_weight + ' kg', ML,              y, colW4, false);
+  dataRow('FULL WEIGHT',   r.full_weight  + ' kg', ML+colW4+4,      y, colW4, false);
+  dataRow('REST WEIGHT',   r.rest_weight  + ' kg', ML+colW4*2+8,    y, colW4, false);
+  // ERP result cell — larger & highlighted
+  const erpX = ML+colW4*3+12;
+  const erpW = PW - MR - erpX;
+  doc.setFillColor(59,125,216);
+  doc.rect(erpX, y, erpW, 26, 'F');
+  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(180,210,255);
+  doc.text('ERP ENTRY (Full–Empty+Rest)', erpX+6, y+10);
+  doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text(r.erp_weight + ' kg', erpX+6, y+23);
+  y += 34;
+
+  // Formula strip
+  doc.setFillColor(245,246,248);
+  doc.rect(ML, y, PW-ML-MR, 18, 'F');
+  doc.setFontSize(8.5); doc.setFont('helvetica','normal'); doc.setTextColor(107,114,128);
+  doc.text('Formula:  Full (' + r.full_weight + ')  –  Empty (' + r.empty_weight + ')  +  Rest (' + r.rest_weight + ')  =  ' + r.erp_weight + ' kg', ML+8, y+12);
+  y += 26;
+
+  // ── GRINDING PARAMS ──
+  y = sectionHeader('Grinding Parameters', y);
+  dataRow('SETTING PLM', r.setting_plm, ML,         y, colW2, false);
+  dataRow('GRIND',       r.grind,       ML+colW2+4, y, colW2, false);
+  y += 34;
+
+  // ── FOOTER ──
+  doc.setDrawColor(200,210,225); doc.setLineWidth(0.5);
+  doc.line(ML, PH-50, PW-MR, PH-50);
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(160,165,175);
+  doc.text('Grinding Production Report  |  ' + r.savedAt, ML, PH-36);
+  doc.text('Page 1 of 1', PW-MR-40, PH-36);
+  // ERP legend
+  doc.setFillColor(59,125,216); doc.roundedRect(ML, PH-28, 18, 10, 2, 2, 'F');
+  doc.setFontSize(6); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  doc.text('ERP', ML+3, PH-21);
+  doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(160,165,175);
+  doc.text('= Enter this value in ERP system', ML+22, PH-21);
+
+  const filename = 'BatchSheet_' + r.wo_bin.replace(/[^a-zA-Z0-9]/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.pdf';
+  doc.save(filename);
+  toast('📄 Batch sheet PDF downloaded!', 'success');
+}
+
+// Init
+updateHeaderCount();
+</script>
+</body>
+</html>
